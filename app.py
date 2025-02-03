@@ -2,7 +2,7 @@ import re
 import base64
 import streamlit as st
 from ollama import chat
-from httpx import Timeout, ConnectError
+from httpx import ConnectError
 
 # Set Streamlit page configuration (optional)
 st.set_page_config(page_title="Ollama Streaming Chat", layout="centered")
@@ -81,7 +81,6 @@ def get_chat_model():
         model="deepseek-r1",
         messages=messages,
         stream=True,
-        timeout=Timeout(10)  # Timeout in seconds to prevent hanging
     )
 
 def handle_user_input():
@@ -129,10 +128,3 @@ if __name__ == "__main__":
             {"role": "system", "content": "You are a helpful assistant."}
         ]
     main()
-
-        
-
-
-
-   
-
