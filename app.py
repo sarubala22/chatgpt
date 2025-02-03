@@ -2,6 +2,7 @@ import re
 import base64
 import streamlit as st
 from ollama import chat
+from httpx import Timeout, ConnectError
 
 # Set Streamlit page configuration (optional)
 st.set_page_config(page_title="Ollama Streaming Chat", layout="centered")
@@ -80,6 +81,7 @@ def get_chat_model():
         model="deepseek-r1",
         messages=messages,
         stream=True,
+        timeout=Timeout(10)  # Timeout in seconds to prevent hanging
     )
 
 def handle_user_input():
@@ -91,26 +93,34 @@ def handle_user_input():
             st.markdown(user_input)
         
         with st.chat_message("assistant"):
-            chat_model = get_chat_model()
-            stream = chat_model(st.session_state["messages"])
-            
-            thinking_content = process_thinking_phase(stream)
-            response_content = process_response_phase(stream)
-            
-            # Save the complete response
-            st.session_state["messages"].append(
-                {"role": "assistant", "content": thinking_content + response_content}
-            )
+            try:
+                chat_model = get_chat_model()
+                stream = chat_model(st.session_state["messages"])
+                
+                thinking_content = process_thinking_phase(stream)
+                response_content = process_response_phase(stream)
+                
+                # Save the complete response
+                st.session_state["messages"].append(
+                    {"role": "assistant", "content": thinking_content + response_content}
+                )
+            except ConnectError:
+                st.error("Connection error. Please check your internet connection and try again.")
+            except Exception as e:
+                st.error(f"An unexpected error occurred: {str(e)}")
 
 def main():
     """Main function to handle the chat interface and streaming responses."""
-    st.markdown("""
-    # Mini ChatGPT powered by <img src="data:image/png;base64,{}" width="170" style="vertical-align: -3px;">
-""".format(base64.b64encode(open("assets/deep-seek.png", "rb").read()).decode()), unsafe_allow_html=True)
-    st.markdown("<h4 style='text-align: center;'>With thinking UI! 💡</h4>", unsafe_allow_html=True)
-    
-    display_chat_history()
-    handle_user_input()
+    try:
+        st.markdown("""
+        # Mini ChatGPT powered by <img src="data:image/png;base64,{}" width="170" style="vertical-align: -3px;">
+        """.format(base64.b64encode(open("assets/deep-seek.png", "rb").read()).decode()), unsafe_allow_html=True)
+        st.markdown("<h4 style='text-align: center;'>With thinking UI! 💡</h4>", unsafe_allow_html=True)
+        
+        display_chat_history()
+        handle_user_input()
+    except FileNotFoundError:
+        st.error("Logo image not found. Please ensure the 'assets/deep-seek.png' file exists.")
 
 if __name__ == "__main__":
     # Initialize session state
@@ -119,3 +129,10 @@ if __name__ == "__main__":
             {"role": "system", "content": "You are a helpful assistant."}
         ]
     main()
+
+        
+
+
+
+   
+
